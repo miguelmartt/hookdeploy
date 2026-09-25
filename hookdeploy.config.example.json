@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "name": "hookdeploy-demo",
+      "repo": "miguelmartt/hookdeploy",
+      "branch": "main",
+      "workflow": "Integracion y Despliegue Continuo (CI/CD)",
+      "composeFile": "/srv/demo/docker-compose.yml",
+      "service": "web"
+    }
+  ]
+}

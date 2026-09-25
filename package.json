@@ -1,0 +1,28 @@
+{
+  "name": "hookdeploy",
+  "version": "0.1.0",
+  "description": "Minimal, secure continuous deployment for your own VPS: GitHub webhook -> HMAC -> allowlist -> docker compose pull/up",
+  "main": "server.js",
+  "license": "MIT",
+  "author": "Miguel Martínez (VérticeDev)",
+  "packageManager": "pnpm@12.6.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miguelmartt/hookdeploy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/miguelmartt/hookdeploy/issues"
+  },
+  "homepage": "https://github.com/miguelmartt/hookdeploy",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js",
+    "test:smoke": "node test.js",
+    "test:unit": "node --test \"tests/*.test.js\"",
+    "lint": "node scripts/check.js"
+  },
+  "dependencies": {}
+}

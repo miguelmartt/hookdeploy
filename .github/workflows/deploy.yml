@@ -1,0 +1,70 @@
+name: Integracion y Despliegue Continuo (CI/CD)
+
+# Disparador: cada push sobre main (ficha) + PRs (solo tests) + manual
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # TRABAJO 1: Ejecutar pruebas automáticas
+  pruebas:
+    name: Ejecutar Tests Unitarios
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Instalar dependencias
+        run: npm install
+      - name: Comprobar sintaxis
+        run: npm run lint
+      - name: Lanzar pruebas unitarias
+        run: npm test
+      - name: Tests unitarios ampliados
+        run: npm run test:unit
+
+  # Comprobación de secretos filtrados (mismo estilo que vpsdoctor-mcp)
+  no_secrets:
+    name: Comprobar secretos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -e
+          if grep -rEn "BEGIN (RSA|OPENSSH|EC) PRIVATE KEY" . --exclude-dir=.git; then exit 1; fi
+          for f in .env hookdeploy.config.json; do
+            if [ -f "$f" ]; then echo "$f no debe subirse"; exit 1; fi
+          done
+
+  # TRABAJO 2: Construir la imagen si los tests pasan
+  construir_docker:
+    name: Construccion de Imagen Docker
+    needs: [ pruebas, no_secrets ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+      - name: Construir la imagen Docker de la aplicacion
+        run: |
+          docker build \
+            --build-arg GIT_SHA=${GITHUB_SHA::7} \
+            --build-arg GIT_REF=${GITHUB_REF_NAME} \
+            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --build-arg RUN_NUMBER=${GITHUB_RUN_NUMBER} \
+            --build-arg RUN_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID} \
+            -t mi-web-node:v1 -t mi-web-node:latest .
+      - name: Probar el contenedor (smoke test)
+        run: |
+          docker run -d --name smoke -p 8080:3000 mi-web-node:latest
+          for i in $(seq 1 10); do curl -fsS http://localhost:8080/health && break; sleep 1; done
+          curl -fsS http://localhost:8080/ | grep '"estado":"OK"'
+          docker rm -f smoke
